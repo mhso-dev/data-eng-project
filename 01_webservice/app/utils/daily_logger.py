@@ -45,6 +45,7 @@ def setup_logger(app):
     """
     # 로그 디렉토리 확인/생성
     log_dir = os.path.join(os.path.abspath(os.path.dirname(app.root_path)), 'logs')
+    print(log_dir)
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     
