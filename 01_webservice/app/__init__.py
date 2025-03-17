@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from logging.handlers import RotatingFileHandler
+from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from datetime import datetime
 from flask import Flask, request, g, session, current_app
 from flask_sqlalchemy import SQLAlchemy
@@ -9,7 +9,7 @@ from flask_login import LoginManager, current_user
 import pymysql
 from dotenv import load_dotenv
 import uuid
-from logging.handlers import TimedRotatingFileHandler
+from app.utils.daily_logger import setup_logger  # 새 로깅 모듈 import
 
 # .env 파일 로드
 load_dotenv()
@@ -35,7 +35,8 @@ def create_app():
     login_manager.login_view = 'auth.login'
     
     # 로깅 설정
-    setup_logging(app)
+    # 날짜별 로깅 설정 적용
+    setup_logger(app)
     
     # 블루프린트 등록
     from app.routes.auth import auth_bp
@@ -249,7 +250,7 @@ def setup_logging(app):
                     
                     # 성능 정보 추가
                     if hasattr(g, 'request_start_time'):
-                        processing_time = (datetime.now() - g.request_start_time).total_seconds() * 1000
+                        processing_time = (datetime.now() - g.request_start_time).total_seconds()
                         log_record["performance"] = {
                             "processing_time_ms": processing_time
                         }
@@ -265,7 +266,14 @@ def setup_logging(app):
     
     # 일반 로그 설정 - JSON 포맷
     app_log_file = os.path.join(log_dir, 'app.log')
-    app_handler = RotatingFileHandler(app_log_file, maxBytes=10485760, backupCount=10)
+    app_handler = TimedRotatingFileHandler(
+        app_log_file,
+        when='midnight',
+        interval=1,
+        backupCount=30,  # 30일 보관
+        encoding='utf-8'
+    )
+    app_handler.suffix = '%Y-%m-%d'  # 날짜 접미사 형식 설정
     app_handler.setFormatter(JsonFormatter())
     app_handler.setLevel(logging.INFO)
     app.logger.addHandler(app_handler)
@@ -279,7 +287,7 @@ def setup_logging(app):
         backupCount=30,         # 30일치 로그 보관
         encoding='utf-8'
     )
-    activity_handler.suffix = '%Y-%m-%d'  # 파일명 형식: user_activity.log.2025-03-12
+    activity_handler.suffix = '%Y-%m-%d'  # 날짜 접미사 형식 설정
     activity_handler.setFormatter(logging.Formatter('%(message)s'))
     
     activity_logger = logging.getLogger('user_activity')
