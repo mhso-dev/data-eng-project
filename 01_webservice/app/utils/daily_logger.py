@@ -53,10 +53,10 @@ def setup_logger(app):
     app_log_base = os.path.join(log_dir, 'app')
     app_handler = DailyFileHandler(app_log_base)
     app_handler.setLevel(logging.INFO)
-    app_handler.setFormatter(logging.Formatter(
+    # 기본 Formatter 대신 커스텀 Formatter 사용
+    app_handler.setFormatter(MicrosecondsFormatter(
         '{"timestamp":"%(asctime)s", "level":"%(levelname)s", "message":"%(message)s", "module":"%(module)s"}',
-        # T와 점(.)을 사용하는 ISO 8601 형식으로 변경
-        '%Y-%m-%dT%H:%M:%S.%L'
+        '%Y-%m-%dT%H:%M:%S.%f'
     ))
     
     # 기존 핸들러 제거 및 새 핸들러 추가
@@ -78,3 +78,17 @@ def setup_logger(app):
     
     app.logger.info('웹 서비스 시작 - 날짜별 로깅 설정 완료')
     return app
+
+# 커스텀 Formatter 클래스 추가
+class MicrosecondsFormatter(logging.Formatter):
+    """마이크로초까지 표시하는 커스텀 Formatter"""
+    
+    def formatTime(self, record, datefmt=None):
+        """타임스탬프 포맷 처리 (마이크로초 포함)"""
+        created = datetime.fromtimestamp(record.created)
+        if datefmt:
+            # %f를 실제 마이크로초로 교체
+            datefmt = datefmt.replace('%f', f'{created.microsecond:06d}')
+            return created.strftime(datefmt)
+        else:
+            return created.strftime('%Y-%m-%d %H:%M:%S,%f')
