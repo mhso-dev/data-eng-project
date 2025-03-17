@@ -54,7 +54,9 @@ def setup_logger(app):
     app_handler = DailyFileHandler(app_log_base)
     app_handler.setLevel(logging.INFO)
     app_handler.setFormatter(logging.Formatter(
-        '{"timestamp":"%(asctime)s", "level":"%(levelname)s", "message":"%(message)s", "module":"%(module)s"}'
+        '{"timestamp":"%(asctime)s", "level":"%(levelname)s", "message":"%(message)s", "module":"%(module)s"}',
+        # T와 점(.)을 사용하는 ISO 8601 형식으로 변경
+        '%Y-%m-%dT%H:%M:%S.%f'
     ))
     
     # 기존 핸들러 제거 및 새 핸들러 추가
